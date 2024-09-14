@@ -1,0 +1,9 @@
+* {
+  color: hsl(0, 0%, 100%);
+  font-family: system-ui;
+  font-weight: bold;
+  box-sizing: border-box;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}

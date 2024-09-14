@@ -1,0 +1,7 @@
+#App {
+  background-color: hsl(0, 0%, 10%);
+  height: 100vh;
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+}

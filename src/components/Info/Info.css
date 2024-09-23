@@ -1,0 +1,27 @@
+#Info {
+  width: 100%;
+  padding: 2rem;
+}
+
+#Info h1 {
+  padding-bottom: 2rem;
+}
+
+#InfoBoard {
+  margin: 2rem 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+#InfoCell {
+  background-color: hsl(0, 0%, 12.5%);
+  font-size: 2rem;
+  align-content: center;
+  aspect-ratio: 1 / 1;
+  border-radius: 0.5rem;
+}
+
+#InfoBestIndexes {
+  font-size: 1.125rem;
+}

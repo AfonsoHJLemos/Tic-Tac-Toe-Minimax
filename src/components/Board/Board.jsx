@@ -6,7 +6,7 @@ import endAudio from "../../assets/end.mp3";
 import winAudio from "../../assets/win.mp3";
 import { useEffect, useRef, useState } from "react";
 
-function Board() {
+function Board({ setInfo, setStats, pruning }) {
   const [board, setBoard] = useState(Array(9).fill(0));
   const [ended, setEnded] = useState(false);
   const [endLine, setEndLine] = useState(null);
@@ -29,31 +29,31 @@ function Board() {
 
     if (board[index] !== 0) return;
 
-    const tempBoard = [...board];
+    const newBoard = [...board];
 
     // "⌬" Turn
-    tempBoard[index] = -1;
+    newBoard[index] = -1;
 
-    if (endBoard(tempBoard)) return;
+    if (endBoard(newBoard)) return;
 
     // "🟃" Turn
-    const minimaxIndex = bestIndex(tempBoard);
-    tempBoard[minimaxIndex] = 1;
+    const minimaxIndex = bestIndex(newBoard);
+    newBoard[minimaxIndex] = 1;
     setLastPlayed(minimaxIndex);
 
-    if (endBoard(tempBoard)) return;
+    if (endBoard(newBoard)) return;
 
-    setBoard(tempBoard);
+    setBoard(newBoard);
     moveRef.current.play();
   };
 
   const initBoard = () => {
-    const tempBoard = Array(9).fill(0);
+    const newBoard = Array(9).fill(0);
 
-    const minimaxIndex = bestIndex(tempBoard);
-    tempBoard[minimaxIndex] = 1;
+    const minimaxIndex = bestIndex(newBoard);
+    newBoard[minimaxIndex] = 1;
 
-    setBoard(tempBoard);
+    setBoard(newBoard);
     setLastPlayed(minimaxIndex);
   };
 
@@ -65,7 +65,7 @@ function Board() {
     startRef.current.play();
   };
 
-  const checkEnd = (board) => {
+  const evalBoard = (board) => {
     const lines = [
       [0, 1, 2],
       [3, 4, 5],
@@ -90,7 +90,7 @@ function Board() {
   };
 
   const endBoard = (board) => {
-    const end = checkEnd(board);
+    const end = evalBoard(board);
 
     if (end.value === null) return false;
 
@@ -111,32 +111,57 @@ function Board() {
     let bestIndexes = [];
     let bestScore = -Infinity;
 
+    let scores = [];
+    let stats = {
+      draws: 0,
+      wins: 0,
+      losses: 0,
+      time: 0,
+    };
+    const startTime = performance.now();
+
     for (let i = 0; i < board.length; i++) {
-      if (board[i] !== 0) continue;
+      if (board[i] !== 0) {
+        scores.push("");
+        continue;
+      }
 
       board[i] = 1;
-      const score = minimax(board, 0, false, -Infinity, Infinity);
+      const score = minimax(board, 0, false, -Infinity, Infinity, stats);
       board[i] = 0;
 
       if (score === bestScore) bestIndexes.push(i);
       else if (score > bestScore) {
         bestScore = score;
-        bestIndexes = [];
-        bestIndexes.push(i);
+        bestIndexes = [i];
       }
+      scores.push(score);
     }
 
+    const endTime = performance.now();
+    stats.time = Math.round((endTime - startTime) * 10) / 10;
+
     const randomIndex = Math.floor(Math.random() * bestIndexes.length);
+    setInfo({
+      board: scores,
+      bestIndex: bestIndexes[randomIndex],
+      bestIndexes,
+      randomIndex,
+    });
+    setStats(stats);
+
     return bestIndexes[randomIndex];
   };
 
-  const minimax = (board, depth, isMaximizing, alpha, beta) => {
-    const end = checkEnd(board);
+  const minimax = (board, depth, isMaximizing, alpha, beta, stats) => {
+    const end = evalBoard(board);
 
     if (end.value !== null) {
-      if (end.value === 0) return 0;
+      stats.draws += end.value === 0 ? 1 : 0;
+      stats.wins += end.value === 1 ? 1 : 0;
+      stats.losses += end.value === -1 ? 1 : 0;
 
-      return end.value * (10 - depth);
+      return end.value === 0 ? 0 : end.value * (10 - depth);
     }
 
     if (isMaximizing) {
@@ -146,13 +171,15 @@ function Board() {
         if (board[i] !== 0) continue;
 
         board[i] = 1;
-        const score = minimax(board, depth + 1, false, alpha, beta);
+        const score = minimax(board, depth + 1, false, alpha, beta, stats);
         board[i] = 0;
 
         bestScore = Math.max(score, bestScore);
-        alpha = Math.max(alpha, score);
 
-        if (beta <= alpha) break;
+        if (pruning) {
+          alpha = Math.max(alpha, score);
+          if (beta <= alpha) break;
+        }
       }
 
       return bestScore;
@@ -163,13 +190,15 @@ function Board() {
         if (board[i] !== 0) continue;
 
         board[i] = -1;
-        const score = minimax(board, depth + 1, true, alpha, beta);
+        const score = minimax(board, depth + 1, true, alpha, beta, stats);
         board[i] = 0;
 
         bestScore = Math.min(score, bestScore);
-        beta = Math.min(beta, score);
 
-        if (beta <= alpha) break;
+        if (pruning) {
+          beta = Math.min(beta, score);
+          if (beta <= alpha) break;
+        }
       }
 
       return bestScore;
@@ -188,6 +217,7 @@ function Board() {
           key={index}
         />
       ))}
+
       <audio ref={startRef} src={startAudio}></audio>
       <audio ref={endRef} src={endAudio}></audio>
       <audio ref={winRef} src={winAudio}></audio>
